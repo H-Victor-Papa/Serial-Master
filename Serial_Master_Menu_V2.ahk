@@ -15,7 +15,8 @@
 #Requires Autohotkey v2.0+
 ;msgbox("This program  is: AutoHotKey version " A_AhkVersion "`n line number " A_LineNumber)
 ;################### Serial_Master_Menu_V2.ahk ###################
-; Last_edit:="HVP 09/30/2023 ; Gui title was "Serial Master"
+; Last_edit:="HVP 12/16/2023 ;If Serial_Master.cfg does not exist when MenuHandler() is called, a default file is Created and opened for edit.
+; 09/30/2023 ; Gui title was "Serial Master"
 ; 09/19/2023 ; MenuHandler(init_only:=false,*) sets Global vatiables only when init_only=true or "OK" exit
 ; 09/17/2023 replaced WinActivate(Partner_ID, , Start_Delay) with WinWaitActive(Partner_ID, , Start_Delay) in Launch code.
 ;   Start_Delay is now global
@@ -49,9 +50,12 @@
 ;
 ;
 
-MenuHandler(init_only:=false,*) {
-;
+
+MenuHandler(init_only:=false,Start_cfg:=true,*) {  ;Init_only:=true does not open Gui.  Start_cfg:=false, do not start the new configuration
+
+
 static NoHide:=0
+No_Start:=false               ; Set true if Gui process must not start the new options configuration
 ; Global variables marked R/O in comment are 'Read Only', all others are set from Serial_Master.cfg
 ; Global variables marked * in comment are set in init_only mode and exit via OK button
 ;global RS232_Port              ; R/O Port number (COM'n') set by Com Port Gui
@@ -73,7 +77,28 @@ Global BI_App_profile:=",3,2,1,1,1,1,2"
 static BI_Decoder_opt_list:="On+Vol|On|Off"
 static BI_Partner_Choice:= 1   ;Built-in default to Notepad
 static BI_App_list:="Notepad|WordPad|Word|Excel|Media Center|None"
-; First read config file to get the number of the partner program
+;First, check for Serial_Master.cfg, Create a default file if missing.
+if not FileExist("Serial_Master.cfg") {
+  FileAppend "[Default]`n"
+  . "Partner_prog=1`nProfile_Default=,3,2,1,1,1,1`nFile_Name_List=Console|DataLog|TextFile|None`n"
+  . "File_ext_List=.txt|.rtf|.doc|.docx|.csv|.xlsx|None`nStart_Time_List:=1|2|5|10|20|50|100`n`n"
+  . "[Program_opt]`n"
+  . "Prog_list=Notepad|WordPad|Word|Excel|Media Center|None`nFile_Name_List=Console|DataLog|TextFile|None`n"
+  . "File_ext_List=.txt|.rtf|.doc|.docx|.csv|.xlsx|None`nStart_Time_List=1|2|5|10|20|50|100`n"
+  . "Partner_prog=2`n`n"
+  . "[Profile]`n"
+  . "Notepad=,2,2,1,1,1,1,2`n"
+  . "WordPad=,2,2,1,1,1,1,2`n"
+  . "Word=WinWord.exe,2,2,1,1,4,1,2`n"
+  . "Excel=,3,1,1,1,6,1,1`n"
+  . "Media Center=C:\WINDOWS\ehome\ehshell.exe,1,1,0,4,7,1,5`n"
+  . "None=,1,1,1,4,7,3,1`n"
+  ,"Serial_Master.cfg"
+  Config_Font:="s10 cRed"
+  Config_Message:="Default Serial_Master Configuration file Created`n Edit as needed and Click OK to save."
+  No_Start:=true               ; Set true if Gui process must not start the new options configuration
+  }
+  ; read config file to get the number of the partner program
 Partner_Num := IniRead("Serial_Master.cfg", "Program_opt", "Partner_prog","ERROR")
   if ((Partner_Num= "ERROR") or(Partner_Num= "" )) {
     Partner_Num := IniRead("Serial_Master.cfg", "Default", "Partner_prog","ERROR") ;if ERROR, the config file should be presumed missing
@@ -124,7 +149,7 @@ if (init_only=true) {
   return
 }
 
-; now read the File_name_list
+; now finish .cfg read and open Gui
 File_name_opt := IniRead("Serial_Master.cfg", "Program_opt", "File_Name_List","ERROR")
   if ((File_name_opt= "ERROR") or (File_name_opt= "" )) {   ; Pop message, use built-in
     Config_Default_Msg("Serial_Master.cfg", "File_Name_List", "Built in list", A_LineNumber)
@@ -251,7 +276,9 @@ Program_optionsButtonOK(*)   {                              ;Save the new progra
     Program_options.Destroy()                               ;done for now, forgetaboutit
     ;*** Program Options GUI closed and settings are saved in Serial_Master.cfg
     ; Next, start the new configuration
-    Start_Program()
+    if (Start_cfg) { ; Set true if Gui process must start the new options configuration(default)
+      Start_Program()
+    }
     return
   } ; End Program_optionsButtonOK()
 }   ; End of Program_options Gui processes
@@ -391,8 +418,13 @@ Start_Program() {
       Name_List := WinGetList(File_Name,,,)         ; This file name in any Title?  Name_List is an array of ahk_id
       ; MatchMode(2)is used since a valid File_Name match may have one pre-pended symbol (*)
       ; Some Apps do not put file name in WinTitle (e.g. Windows Notepad 11.2302.16.0) and will not appear in Name_List.
-      ; Notepad 11.2303.40.0 puts the active tab title in the WinTitle. Other tab names will not be in the list
+      ; Notepad 11.2303.40.0 puts the active tab title in WinTitle. Other tab names will not be in the list.
+      ;  Therefore, File Open of a file not in the active tab will result in a duplicate file open in a new Tab.
       ; Legacy Notepad and Notepad 11.2303.40.0 will prepend the title with '*' to indicate file has changed since opened.
+      ; 10-02-2023 Notepad 11.2307.27.0 IN 'When Notepad Starts setting', "Open content from the prevoius session" opens a
+      ;   duplicate session and may open a 'Close Popup' tooltip blocking input. Turn on "Open a New Window"
+      ;   in Notepad configuration.
+
 
       SetTitleMatchMode(Save_Match_Mode)
       ;MsgBox("Name_List length " Name_List.Length  "`nName_List[]1 " 0+Name_List[1] "`nName_List[2] " 0+Name_List[2]
