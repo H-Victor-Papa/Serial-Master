@@ -13,8 +13,10 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #Requires Autohotkey v2.0.9+
-; last edit 09/19/2023 "Recursion limit error" on ExitApp fixed in v2.0.9. Original code restored.
-;    Active MsgBox statements put "Com Port Services Line number " A_LineNumber in title
+; last edit 12/13/2023 Added Com_Port_Init(inifile,No_Gui:=false). Create config file,
+;	if No_Gui is false: open Gui for editing, then open port.
+; 09/19/2023 "Recursion limit error" on ExitApp fixed in v2.0.9. Original code restored.
+;	Active MsgBox statements put "Com Port Services Line number " A_LineNumber in title
 ; 08/11/2023 fixed circular reference caused by Com_Config_GUI() & RS232_Initialize().
 ; 08/09/2023  --work arround for issue in RS232_Read() that caused "Recursion limit error" on ExitApp
 ; 08/04/2023 -- Modem_Leads() ends in Exit (not return) to end thread.
@@ -73,6 +75,42 @@
   ;~ return
 ;~ }
 
+Com_Port_Init(inifile,No_Gui:=false) {
+Global Config_Message
+Global config_font
+;Create config file, Open GUI with message and wait for close
+FileAppend "[Default]`n"
+   . "COM_Port_N=COM3`n"
+   . "Baud_Rate=57600`n"
+   . "N_Data=8`n"
+   . "Parity_bit=None`n"
+   . "Stop_Bits=1`n"
+   . "DTR_State=Off`n"
+   . "RTS_State=On`n"
+   . "Tx_Flow_Control=None`n"
+   . "Rx_Flow_Control=None`n`n"
+   . "[COM_Configuration]`n"
+   . "COM_Port_N=COM4`n"
+   . "Baud_Rate=57600`n"
+   . "N_Data=8`n"
+   . "Parity_bit=None`n"
+   . "Stop_Bits=1`n"
+   . "Tx_Flow_Control=None`n"
+   . "Rx_Flow_Control=None`n"
+   . "DTR_State=On`n"
+   . "RTS_State=On`n"
+, inifile
+	if (No_Gui) {
+		return
+		}
+	Config_Font:="s10 cRed"
+    Config_Message:="Default Configuration file Created"
+	Com_Config_GUI(inifile,false,false)	;Open gui, with message, for editing. No resync with Master_Menu
+	WinWaitClose("Com Port Configuration")  ; Wait for GUI to close.
+	return
+}
+
+
 Open_Com_Gui(*)	{						; Menu selection lands here
 	;global Com_inifile					; Com_inifile is global (read only)
 	Com_Config_GUI(Com_inifile)
@@ -80,7 +118,7 @@ Open_Com_Gui(*)	{						; Menu selection lands here
 	RS232_Initialize(RS232_Settings)       	; Apply new settings
 return
 }
-Com_Config_GUI(inifile,No_Gui:=false,*)
+Com_Config_GUI(inifile,No_Gui:=false,X_Sync:=true,*) {
 {
 ;The following variables are Global in scope and may be change herein.
 Global Config_Message
@@ -310,7 +348,9 @@ RS232_Settings:=(Options_result.COM_Port_out
 	SetTimer(Modem_Leads,0)    				; Remove the 100mS timer to sample Modem leads
 	if (  Old_Port!=RS232_Port) {    		; New port to open
 		RS232_Close(RS232_FileHandle)   	; close the now open port
-		Start_Program()             		; Restart Partner program to pick up new port
+		if (X_Sync) {				; sync with external functions?
+			Start_Program()             	; Restart Partner program to pick up new port
+		}
 	}
 	;RS232_Initialize(RS232_Settings)       ; can create a circular reference!
 	return									; new settings are not yet acted on.
