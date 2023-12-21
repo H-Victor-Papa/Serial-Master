@@ -16,7 +16,12 @@
 ;Serial_Master working copy
 #Requires AutoHotkey v2+
 ;msgbox("This program  is: AutoHotKey version " A_AhkVersion "`n line number " A_LineNumber)
-Last_edit:= "HVP 09/30/2023" ; WinWaitClose in rx loop was nver exiting. Changed to new title and require exact match to exit.
+
+Last_edit:= "HVP 12/13/2023" ; Version_Number was"V2.0"
+;   Changed Icon to built in 'Serial Master', was Green_gear.png
+;   Changed Com_PortServices_V2.ahk to create config file if Com_inifile does not exist.
+;   Changed Serial_Master_Menu_V2.ahk to create config file if Serial_Master.cfg does not exist.
+; 09/30/2023" ; WinWaitClose in rx loop was nver exiting. Changed to new title and require exact match to exit.
 ; 09/19/2023" ; Program Options GUI was changing Globals on CANCEL.  Changes now done only on OK exit or init=true
 ;    WinExist(Partner_ID) is failing in RS232 COM port receive infinite loop after sleep
 ;    added  if !(WinWaitActive(Partner_ID, , Start_Delay)) { ; to give time to recover from wake-up
@@ -66,9 +71,66 @@ Global SPI_GETSCREENSAVERRUNNING := 0x0072
 Global screen_saver_active:=0			;zero indicates the screen saver is not active
 Global Start_Delay
 ;-----------------Install a custom tool tray Option list-----------------------------------------------------------------
-Tray_modify:  ;Changes script menu to a custom list
-TraySetIcon("Green_gear.png")	;image file must be in the working directory, where the script was started.
+;Serial_Master_Icon.png converted by https://base64.guru/converter/encode/image/bmp
+SM_ICO:="iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAelSUR"
+. "BVHhe7Z0/iCVFEIcPDC4wUA8ExUAMDMzMFANDMzE3MTEWDIw1MRTE0MRATARBMBAxUBAUBAU1OUE4QVREQTgwfvKt/pbavuqe6j/z9s1ON3zsvunqnp76dVdXz1vY"
+. "a4fO8vC7z0wMvaVKEG8AkxjREhLEu8GkjaVSFMTrcDKGXMkK4nUyGYtXXEG8xpN1SMsdgniNJutiywVBPOPJcVCZgpwIKueCeEaT40KZgpwQlDNBvMrJ5TAFOTGmI"
+. "CfGaoK8+Nmrh49+/vzw9R8/HG7d/vXw+z9/nsO1T3/56vDW9+8dnvzgebf9XhkuyOvfvH24+fetCwKUQKz3f/pkCvM/17yLLeDQL3771nV6BIRBTK/vPTFEEMT47q"
+. "8fXUfXQijz7rEXugUZKYZgj9lrCOsWhBntObUXRN6jKF2CvPLlG64zR8FK8e57lekSpGcTj8BGj+jeva8qzYIQTjwnpiAaZxK1w8GRMIcYtt1eaBYkEq5KGRPt0wO"
+. "jYP/YoxjQLAiHOc+Zluc+fsltK3B6KspeN3OxqiARx1pRWFF7FgNWFYR3VV7bFOz2fiAUzYLwmsMTwbLXjbmHZkHYHzwRUqYodTQLAhzcPBFSpihxugQh9nsCeCDK"
+. "fJu7TJcgEF0lIrrR75VuQQhFnuNL8E2i19dkgCBQE7oEr1T2fubwGCIIMOs9x5fgVL50mt8bwwSBlu9GZgZ2kaGCQKsoc7P/j+GCQOS1iscUZSVBoGWjh3dufuj2t"
+. "xdWEwQ4CBKOPMeX2PNKWVUQYMOu+cM5sbevbsXqggDnjdoTPSur9pxSegPd+3q/tNI9+1aOIoiozcBqnVhKJnCo1ybC0lcNIw+4RxUE2LS9h8pRc3BcErw1DK7Vr8"
+. "fRBYGaDKzmvddSWGx9h7aUmIzMDC9FEIiKQkLgtffw2ltq+hKRb0ZHviy9NEEgGr4iMTr6DWbta5rIvjfyLywvVRCI/KF2JEZj47VNqZ3NkXNUT8KQMkwQHNLyN1W"
+. "RVRIRJPq6piZsRcKVGJVpdQtCqLCbKd9zeHY5IjM7IkhNSh0NWzV9RsYYoVkQZkRuVta8+ohs7pGHrTl4RsNWJFyJUZlWkyA4sTRY6qKzMOLISDjw2uWIhK2acAVM"
+. "Tq+fWqoFicZqRFlaKZGQEHFeNMOyLE2YmnAFozKtakGYrTVLmYEy2zTL+YlQkewKIuElsg+lLPWbe8bc9ZYzjkdTyKp9/dFD5NVJadXmxlpyYClcIaR3Hby+amne1"
+. "Gs20VYIG969U3LhhdlcCme5sJXrjwyyJNaITKtZEEIPs8wb2AhwZmQzh9zkUFzPhcdc2MqFJUItInp1sLRnRmgWBBhcbvA90Gc0SwOvD5DDa8JWaQVognh1MCLT6h"
+. "IEcFx0g45QK0YpJOlsUBO2SuFKNrnnHZFpdQsCzJzSZheFB4ps4pZShmVjejRslcKVbBDHsxmRaQ0RROCA3GBL8CCt8beU8dk9KBK2IuEKSlmdbFoZKohgluNglr+"
+. "34eIErvNgNeHJI7cymenWLhK2IuEKSsL1Ps8qghwTT3Dw4vlS2IqEKyiFScSytrVsXpCcE9O9AUphKxquhGcHvZnWpgXBUZ5TQBmWpRS2cqsnDVcCEWvso2xakGiG"
+. "ZalN0XPJRi5U0r9nH2XTgkQzrGgbj1w/a2VamxYkmmFZSmErpRR+WDleG+jJtDYtSE2GZYmGrdLZaK1Ma9OC1GRYlmjYyoUr4bWBnkxrs4KUMqwlh0TCViRbymVaH"
+. "DA9+wibFaQlw7Isha1SuBKtIbPEZgUphR1WgNfGUsqSYClcwRqZ1mYFyWVY4NmnkAl5bSF6uCtlWpFJ4bFZQUaEi9weEAlX0Bs2PTYryFVlCnJiTEFOjCnIiTEFOT"
+. "GmICfGFOTEuDRB7nn2kcNd910/PPDaE259Sq39WmgcD735tFvfS5Ug97/8+Nlg4O6nHnRtotCefujTq09ZEkT1aX+5662cjCAMgIFYekWpYUkQCZyOSWO98cJjF66"
+. "3srog0f/SJkH0YDx4Oqjrj9577gCwdWrLTx4qdXAquGx1vyVBbFuNC1tdS4Wyq51xp/3btkCfGpOQre0LNGagX9u/rueo+rd5GpC3/O2ALF497VMH2HpLRBCJqQmR"
+. "tuE6yD51tkX9qy9BX54g6TWRjgEiEaX6/xhqNnCj0jUNVAPToFSvgdqHsu1Vnz6YJ4gcjC2O1INzjd/VViuHa3y2E0sCqH9srIgi7Uvt9Bn4DNbem8Qezf9Ykpvow"
+. "eVQDwaU2oN1sNpbZ1snp/ayEba97HQNR6T9S5BcH+k1b9wSgN9zYJPaL1ElCB2nD8WNNHB+pm0E9UuCcC2tV5/WXjapLWOhnt8F9bqmWaqxl1aIhesam72X6sDaW1"
+. "L7Jc4EoXiVFnWconqvDmx9TpBS+4gg9GvDi5yr++EMPtMHn1PRLOo/fV71petysCZTSjruiCCUsCCQ3jy9iRwhbB2fS4LIRuheEUG4bvtW23QFWBsrCnW2fwloUTv"
+. "PwdzH2mrMOfsclHNBKJ7R5DioTEFOBJULglA848m62HKHIBSv0WQd0uIKQvEaT8bilawgFK+TyRhypSiIitfhpI2lEhJExbvBJEasHA7/AoPnQ7FafEIgAAAAAElF"
+. "TkSuQmCC"
 
+nBytes:=Floor(StrLen(RTrim(SM_ICO,"="))*3/4)
+BLen:=StrLen(SM_ICO)
+Bin:= Buffer(nBytes)
+Err_Msg:=""
+Crypt_result:=DllCall("Crypt32.dll\CryptStringToBinary" ;returns TRUE if formatted string is converted into an array of bytes.
+,"Str",SM_ICO  ;A pointer to a string that contains the formatted string to be converted.
+,"UInt",BLen            ;The number of characters of the formatted string to be converted not including NULL
+,"UInt",1               ;string format:Base64, without headers
+,"Ptr",Bin              ;pointer to a buffer that receives the returned sequence of bytes
+,"UIntP",&nBytes        ;(DWORD Pointer) size, in bytes, of the above buffer.
+,"UInt",0               ;If no header is present, then the DWORD is set to zero.
+,"UInt",0)              ;Flags
+if (Crypt_result) {
+      Icon_handle:=DllCall("CreateIconFromResourceEx" ;Creates an icon or cursor from resource bits describing the icon.
+         ,"Ptr",Bin          ;buffer pointer containing the icon or cursor resource bits.
+         ,"UInt",nBytes      ;The size, in bytes, of the set of bits buffer
+         ,"Int",True         ;TRUE, an icon is created, FALSE, a cursor is created.
+         ,"UInt",0x30000     ;This parameter is generally set to 0x00030000
+         ,"Int",Gear_W:=0    ;The width, in pixels.  Zero uses system defaults
+         ,"Int",Gear_H:=0    ;The height, in pixels. Zero uses system defaults
+         ,"UInt",0)          ;Flags
+            ;see https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-createiconfromresourceex
+      if not (Icon_handle) {
+            Err_Msg:="CreateIconFromResourceEx.dll failed"
+      }
+}
+else Err_Msg:="Crypt32.dll failed"
+if not ( Err_Msg="") {
+      MsgBox ("Create Gear Icon failed`n" Err_Msg, "Serial Master Line number " A_LineNumber)
+}
+
+
+Tray_modify:  ;Changes script menu to a custom list
+;TraySetIcon("Green_gear.png")	;image file must be in the working directory, where the script was started.
+TraySetIcon("HICON:" Icon_handle) ;Icon_handle is a local Base64 encoded Icon
 Tray:= A_TrayMenu               ;get the Tray menu object
 ;Tray.Delete() ; V1toV2: not 100% replacement of NoStandard,remove standard menu items
 Tray.Add  ; Creates a separator line.
@@ -79,9 +141,40 @@ Tray.Add("COM Port Configureation", Open_Com_Gui.bind(Com_inifile,0))  ;Opens th
 Tray.Add("About", Serial_Master_Splash.bind(0,Last_edit))  ; Creates the 'About' display.
 Decoder_init()                              ; one time initiaize Key_List
 Quit_var :=0                                ; Set by Ctrl-F1 hotkey to indicate intent to exit Serial Master
+
 No_COM_Gui:=true
-Com_Config_GUI(Com_inifile,No_COM_Gui)      ; get RS232_Settings and RS232_Port
-MenuHandler(true) ;initialization only pass to initialize Global variables
+	if FileExist(Com_inifile) {
+        Com_Config_GUI(Com_inifile,No_COM_Gui)      ; get RS232_Settings and RS232_Port
+	}
+   else {
+     msgResult:= MsgBox( Com_inifile " NOT FOUND`n Click OK to Create " Com_inifile " in Serial Master's directory`n  or click CANCEL to exit Serial Master"
+     , "Serial Master  Line Number " A_LineNumber , "O/C 4096")
+    if (msgResult = "OK") {             ; This retry effort will keep trying the same settings...
+       Com_Port_Init(Com_inifile)       ; Create configuration file and open for editing
+      }
+    else {
+      SAFE_EXIT()         ; Close com port, release all keys and Exit Script
+      exit
+    }
+  }
+Init_only:=true                 ; MenuHandler() optional, initialization only pass to initialize Global variables,
+Open_Options:=false             ; MenuHandler() (Default) initialize Global variables and open Options Gui.
+No_Start:=false                  ; MenuHandler() optional, on Gui close, new configuration is not started.
+  if FileExist("Serial_Master.cfg") {
+     MenuHandler(Init_only) ;initialization only pass to initialize Global variables
+  }
+  else {
+     msgResult:= MsgBox( "Serial_Master.cfg" " NOT FOUND`n Click OK to Create " "Serial_Master.cfg" " in Serial Master's directory`n  or click CANCEL to exit Serial Master"
+     , "Serial Master  Line Number " A_LineNumber , "O/C 4096")
+    if (msgResult = "OK") {
+      MenuHandler(Open_Options,No_Start)     ; missing, Create configuration file and open for editing
+      WinWaitClose("Serial Master Options")  ; Wait for GUI to close.
+    }
+    else {
+      SAFE_EXIT()         ; Close com port, release all keys and Exit Script
+      exit
+    }
+  }
 Serial_Master_Splash(Splash_time,Last_edit) ; Open splash menu, continue to WinWaitClose()during count down
 ;########################################################################
 ;###### Build Hotkey Assignments -  Used to direct Keyboard input ######
